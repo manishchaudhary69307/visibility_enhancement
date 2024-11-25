@@ -38,13 +38,47 @@ def tun_channel(channel, tau, zeta):
     return ident_operator_val_scaled
 
 
+def draw_histogram(image, title, color):
+    # Create a blank image for the histogram display
+    hist_img = np.zeros((300, 512, 3), dtype=np.uint8)  # Black image for histogram
+
+    # Split the image channels if it's a color image
+    if len(image.shape) == 3:  # Color image
+        channels = cv.split(image)
+        colors = ['b', 'g', 'r']  # Blue, Green, Red for each channel
+        for (chan, col) in zip(channels, colors):
+            # Calculate the histogram for the channel
+            hist = cv.calcHist([chan], [0], None, [256], [0, 256])
+            hist = cv.normalize(hist, hist, 0, hist_img.shape[0], cv.NORM_MINMAX)
+
+            # Draw the histogram bars in the image (flip y-axis for correct orientation)
+            for x in range(1, 256):
+                cv.line(hist_img, (x - 1, hist_img.shape[0] - int(hist[x - 1])),
+                        (x, hist_img.shape[0] - int(hist[x])),
+                        (255, 0, 0) if col == 'b' else (0, 255, 0) if col == 'g' else (0, 0, 255), 1)
+    else:  # Grayscale image
+        hist = cv.calcHist([image], [0], None, [256], [0, 256])
+        hist = cv.normalize(hist, hist, 0, hist_img.shape[0], cv.NORM_MINMAX)
+
+        # Draw the histogram bars in the image (flip y-axis for correct orientation)
+        for x in range(1, 256):
+            cv.line(hist_img, (x - 1, hist_img.shape[0] - int(hist[x - 1])),
+                    (x, hist_img.shape[0] - int(hist[x])), (255, 255, 255), 1)
+
+    # Show the histogram using OpenCV
+    cv.imshow(f"Histogram - {title}", hist_img)
+
+
+
+
+
 # Main function
 if __name__ == "__main__":
     tau_r = 0.5
     tau_g = 0.6
     tau_b = 0.4
     zeta = 0.6
-    image_path = "images/2.jpg"
+    image_path = "images/1.jpg"
 
     # Read and split the image
     org_image = cv.imread(image_path)
@@ -58,6 +92,10 @@ if __name__ == "__main__":
 
     # Merge the channels back into an image
     merged_image = cv.merge([tun_b, tun_g, tun_r])
+
+    # Draw histograms for the input and output images
+    draw_histogram(image, "Input Image", color="black")
+    draw_histogram(merged_image, "Output Image", color="black")
 
     # Display the results
     cv.imshow("Merged Image", merged_image)
